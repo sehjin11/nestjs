@@ -1,3 +1,4 @@
+import { User } from './../auth/user.entity';
 import { Injectable, NotFoundException, PipeTransform } from '@nestjs/common';
 import { BoardStatus } from './board-status.enum';
 import { v1 as uuid } from 'uuid';
@@ -18,6 +19,15 @@ export class BoardsService {
   //     return this.boards;
   //   }
 
+  async getUserBoards(user: User): Promise<Board[]> {
+    const query = this.boardRepository.createQueryBuilder('board'); //board 테이블
+
+    query.where('board.userId=:userId', { userId: user.id });
+
+    const boards = await query.getMany();
+    return boards;
+  }
+
   async getAllBoard(): Promise<Board[]> {
     return this.boardRepository.find();
   }
@@ -35,8 +45,8 @@ export class BoardsService {
   //   }
 
   //Dto를 받아오고 결과값은 Board
-  createBoard(createBoardDto: CreateBoardDto): Promise<Board> {
-    return this.boardRepository.createBoard(createBoardDto);
+  createBoard(createBoardDto: CreateBoardDto, user: User): Promise<Board> {
+    return this.boardRepository.createBoard(createBoardDto, user);
   }
 
   async getBoardById(id: number): Promise<Board> {
@@ -47,8 +57,8 @@ export class BoardsService {
     return found;
   }
 
-  async deleteBoard(id: number): Promise<void> {
-    const result = await this.boardRepository.delete(id);
+  async deleteBoard(id: number, user: User): Promise<void> {
+    const result = await this.boardRepository.delete({ id, user });
     if (result.affected === 0) {
       throw new NotFoundException(`Can't find Board with id ${id}`);
     }
